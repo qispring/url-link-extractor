@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.backends._legacy:_backend"
+
+[project]
+name = "url-link-extractor"
+version = "1.0.0"
+description = "Extract URLs and page titles from a given entry page"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [{name = "url-link-extractor"}]
+
+dependencies = [
+    "httpx>=0.24",
+    "beautifulsoup4>=4.12",
+    "lxml>=4.9",
+    "chardet>=5.0",
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+]
+
+[project.scripts]
+url-link-extractor = "url_link_extractor.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
