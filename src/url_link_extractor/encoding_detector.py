@@ -6,6 +6,12 @@ import chardet
 
 
 class EncodingDetector:
+    _cjk_encodings = frozenset({
+        "utf-8", "gb2312", "gbk", "gb18030", "big5",
+        "euc-jp", "shift-jis", "shift_jis", "cp932",
+        "euc-kr", "cp949", "iso-2022-jp", "iso-2022-kr",
+    })
+
     def detect_and_decode(self, raw: bytes, content_type: str = "") -> str:
         encoding = self._extract_encoding(content_type)
         if encoding:
@@ -18,7 +24,12 @@ class EncodingDetector:
         detected = result.get("encoding")
         if detected:
             try:
-                return raw.decode(detected)
+                decoded = raw.decode(detected)
+                if detected.lower() not in self._cjk_encodings:
+                    alt = self._try_cjk_alternatives(raw, decoded)
+                    if alt is not None:
+                        return alt
+                return decoded
             except (UnicodeDecodeError, LookupError):
                 pass
 
@@ -26,6 +37,19 @@ class EncodingDetector:
             return raw.decode("utf-8")
         except UnicodeDecodeError:
             return raw.decode("utf-8", errors="replace")
+
+    @staticmethod
+    def _try_cjk_alternatives(raw: bytes, current: str) -> Optional[str]:
+        current_cjk = sum(1 for c in current if "\u4e00" <= c <= "\u9fff")
+        for enc in ("gb18030", "gbk", "big5"):
+            try:
+                decoded = raw.decode(enc)
+            except (UnicodeDecodeError, LookupError):
+                continue
+            cjk_count = sum(1 for c in decoded if "\u4e00" <= c <= "\u9fff")
+            if cjk_count > current_cjk:
+                return decoded
+        return None
 
     @staticmethod
     def _extract_encoding(content_type: str) -> Optional[str]:
